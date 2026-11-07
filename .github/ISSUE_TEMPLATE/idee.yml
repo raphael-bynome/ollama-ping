@@ -1,0 +1,11 @@
+name: Idée
+description: Proposer une amélioration
+labels: [enhancement]
+body:
+  - type: textarea
+    id: besoin
+    attributes:
+      label: Le besoin
+      description: Qu'est-ce que vous voulez mesurer ou vérifier ?
+    validations:
+      required: true

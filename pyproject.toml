@@ -1,0 +1,24 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "ollama-ping"
+dynamic = ["version"]
+description = "Sonde de santé et de latence pour un serveur Ollama"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+dependencies = []
+
+[project.scripts]
+ollama-ping = "ollama_ping.cli:main"
+
+[project.optional-dependencies]
+dev = ["pytest"]
+
+[tool.hatch.version]
+path = "src/ollama_ping/__init__.py"
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]

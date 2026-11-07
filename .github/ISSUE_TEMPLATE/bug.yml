@@ -1,0 +1,15 @@
+name: Bug
+description: Quelque chose ne marche pas
+labels: [bug]
+body:
+  - type: textarea
+    id: commande
+    attributes:
+      label: Commande lancée et sortie obtenue
+      render: console
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version d'Ollama et d'ollama-ping
