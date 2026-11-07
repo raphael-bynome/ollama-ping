@@ -122,18 +122,46 @@ def _texte(r: Rapport) -> str:
     return "\n".join(lignes)
 
 
+def _prometheus(r: Rapport) -> str:
+    """Format texte d'exposition Prometheus (textfile collector de node_exporter)."""
+    etiquettes = f'url="{r.url}"'
+    if r.modele_teste:
+        etiquettes += f',model="{r.modele_teste}"'
+    metriques = [
+        ("ollama_ping_up", "gauge", "1 si le serveur et la génération de test répondent", 1 if r.ok else 0),
+        ("ollama_ping_models", "gauge", "nombre de modèles présents sur le serveur", len(r.modeles)),
+        ("ollama_ping_first_token_seconds", "gauge", "délai du premier jeton", r.premier_jeton_ms and r.premier_jeton_ms / 1000),
+        ("ollama_ping_load_seconds", "gauge", "temps de chargement du modèle", r.chargement_ms and r.chargement_ms / 1000),
+        ("ollama_ping_total_seconds", "gauge", "durée totale de la génération", r.total_ms and r.total_ms / 1000),
+        ("ollama_ping_tokens_per_second", "gauge", "débit de la génération", r.jetons_par_s),
+    ]
+    lignes = []
+    for nom, genre, aide, valeur in metriques:
+        if valeur is None:
+            continue
+        lignes += [f"# HELP {nom} {aide}", f"# TYPE {nom} {genre}", f"{nom}{{{etiquettes}}} {valeur:g}"]
+    return "\n".join(lignes)
+
+
 def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="ollama-ping", description=__doc__.splitlines()[0])
     p.add_argument("--url", default="http://localhost:11434", help="adresse du serveur Ollama")
     p.add_argument("--model", "-m", help="modèle à tester par une génération courte")
     p.add_argument("--prompt", default="Réponds seulement : OK", help="prompt de la génération")
     p.add_argument("--timeout", type=float, default=60.0, help="délai maximal en secondes")
-    p.add_argument("--json", action="store_true", help="sortie JSON (pour la supervision)")
+    sortie = p.add_mutually_exclusive_group()
+    sortie.add_argument("--json", action="store_true", help="sortie JSON (pour la supervision)")
+    sortie.add_argument("--prometheus", action="store_true", help="sortie au format Prometheus")
     p.add_argument("--version", action="version", version=f"%(prog)s {__version__}")
     args = p.parse_args(argv)
 
     rapport, code = sonder(args.url, args.model, args.prompt, args.timeout)
-    print(json.dumps(asdict(rapport), ensure_ascii=False) if args.json else _texte(rapport))
+    if args.json:
+        print(json.dumps(asdict(rapport), ensure_ascii=False))
+    elif args.prometheus:
+        print(_prometheus(rapport))
+    else:
+        print(_texte(rapport))
     return code
 
 

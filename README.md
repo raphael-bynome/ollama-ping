@@ -45,6 +45,7 @@ ollama-ping --url http://ollama:11434 -m qwen3:8b --json
 | `--prompt` | prompt de la génération | `Réponds seulement : OK` |
 | `--timeout` | délai maximal, en secondes | `60` |
 | `--json` | sortie JSON | non |
+| `--prometheus` | sortie au format d'exposition Prometheus | non |
 
 ## Codes de sortie
 
@@ -62,6 +63,27 @@ journal système si la sonde échoue :
 ```cron
 */5 * * * * ollama-ping --url http://localhost:11434 -m qwen3:8b --json >> /var/log/ollama-ping.jsonl || logger -t ollama-ping "Ollama KO"
 ```
+
+## Exemple : Prometheus et Grafana
+
+Avec le *textfile collector* de node_exporter, une ligne de cron suffit :
+
+```cron
+*/5 * * * * ollama-ping -m qwen3:8b --prometheus > /var/lib/node_exporter/ollama.prom.tmp; mv /var/lib/node_exporter/ollama.prom.tmp /var/lib/node_exporter/ollama.prom
+```
+
+Métriques produites (étiquettes `url` et `model`) :
+
+| Métrique | Sens |
+|---|---|
+| `ollama_ping_up` | 1 si le serveur (et la génération de test) répond, 0 sinon |
+| `ollama_ping_models` | nombre de modèles présents |
+| `ollama_ping_first_token_seconds` | délai du premier jeton |
+| `ollama_ping_load_seconds` | temps de chargement du modèle |
+| `ollama_ping_total_seconds` | durée totale de la génération |
+| `ollama_ping_tokens_per_second` | débit |
+
+Exemple d'alerte : `ollama_ping_up == 0` pendant 10 minutes.
 
 ## Développement
 
