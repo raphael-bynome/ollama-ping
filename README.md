@@ -15,7 +15,7 @@ s'en servir comme sonde dans un `healthcheck` Docker, un cron ou un outil de sup
 ## Installation
 
 ```bash
-pipx install git+https://github.com/raphael-bynome/ollama-ping
+pipx install ollama-ping
 ```
 
 ## Utilisation
