@@ -76,3 +76,18 @@ def test_serveur_injoignable():
 def test_sortie_json(serveur, capsys):
     assert main(["--url", serveur, "--json"]) == 0
     assert json.loads(capsys.readouterr().out)["ok"] is True
+
+
+def test_sortie_prometheus(serveur, capsys):
+    assert main(["--url", serveur, "-m", "qwen3:8b", "--prometheus"]) == 0
+    sortie = capsys.readouterr().out
+    assert f'ollama_ping_up{{url="{serveur}",model="qwen3:8b"}} 1' in sortie
+    assert "# TYPE ollama_ping_load_seconds gauge" in sortie
+    assert f'ollama_ping_load_seconds{{url="{serveur}",model="qwen3:8b"}} 1.5' in sortie
+
+
+def test_prometheus_serveur_injoignable(capsys):
+    assert main(["--url", "http://127.0.0.1:9", "--timeout", "1", "--prometheus"]) == 1
+    sortie = capsys.readouterr().out
+    assert 'ollama_ping_up{url="http://127.0.0.1:9"} 0' in sortie
+    assert "first_token" not in sortie
