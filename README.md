@@ -9,7 +9,7 @@ Une sonde de santé et de latence pour un serveur [Ollama](https://ollama.com), 
 Python et sans dépendance.
 
 Elle vérifie que le serveur répond, liste ses modèles et, si on lui donne un modèle, mesure une
-génération courte : délai du premier jeton, durée totale et débit. Son code de sortie permet de
+génération courte : délai du premier jeton, temps de chargement du modèle, durée totale et débit. Son code de sortie permet de
 s'en servir comme sonde dans un `healthcheck` Docker, un cron ou un outil de supervision.
 
 ## Installation
@@ -27,6 +27,7 @@ OK  http://localhost:11434
   modèles     3 (llama3.2:latest, nomic-embed-text:latest, qwen3:8b)
   modèle      qwen3:8b
   1er jeton   412 ms
+  chargement  95 ms
   total       980 ms
   débit       41.7 jetons/s
 ```

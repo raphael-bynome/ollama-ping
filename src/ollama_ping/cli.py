@@ -24,6 +24,7 @@ class Rapport:
     modeles: list[str] = field(default_factory=list)
     modele_teste: str | None = None
     premier_jeton_ms: float | None = None
+    chargement_ms: float | None = None
     total_ms: float | None = None
     jetons_par_s: float | None = None
     erreur: str | None = None
@@ -34,8 +35,10 @@ def _get_json(url: str, timeout: float) -> dict:
         return json.load(r)
 
 
-def _generer(base: str, modele: str, prompt: str, timeout: float) -> tuple[float, float, float | None]:
-    """Lance une génération en flux ; renvoie (premier jeton ms, total ms, jetons/s)."""
+def _generer(
+    base: str, modele: str, prompt: str, timeout: float
+) -> tuple[float, float, float | None, float | None]:
+    """Lance une génération en flux ; renvoie (premier jeton ms, total ms, jetons/s, chargement ms)."""
     corps = json.dumps({"model": modele, "prompt": prompt, "stream": True}).encode()
     req = urllib.request.Request(
         f"{base}/api/generate", data=corps, headers={"Content-Type": "application/json"}
@@ -43,6 +46,7 @@ def _generer(base: str, modele: str, prompt: str, timeout: float) -> tuple[float
     debut = time.perf_counter()
     premier = None
     debit = None
+    chargement = None
     with urllib.request.urlopen(req, timeout=timeout) as r:
         for ligne in r:
             if not ligne.strip():
@@ -54,10 +58,12 @@ def _generer(base: str, modele: str, prompt: str, timeout: float) -> tuple[float
                 n, duree_ns = morceau.get("eval_count"), morceau.get("eval_duration")
                 if n and duree_ns:
                     debit = n / (duree_ns / 1e9)
+                if morceau.get("load_duration"):
+                    chargement = morceau["load_duration"] / 1e6
                 break
     fin = time.perf_counter()
     premier = premier or fin
-    return (premier - debut) * 1000, (fin - debut) * 1000, debit
+    return (premier - debut) * 1000, (fin - debut) * 1000, debit, chargement
 
 
 def sonder(base: str, modele: str | None, prompt: str, timeout: float) -> tuple[Rapport, int]:
@@ -82,7 +88,12 @@ def sonder(base: str, modele: str | None, prompt: str, timeout: float) -> tuple[
 
     rapport.modele_teste = modele
     try:
-        rapport.premier_jeton_ms, rapport.total_ms, rapport.jetons_par_s = _generer(
+        (
+            rapport.premier_jeton_ms,
+            rapport.total_ms,
+            rapport.jetons_par_s,
+            rapport.chargement_ms,
+        ) = _generer(
             base, modele, prompt, timeout
         )
     except (urllib.error.URLError, OSError, ValueError) as e:
@@ -101,6 +112,8 @@ def _texte(r: Rapport) -> str:
     if r.modele_teste:
         lignes.append(f"  modèle      {r.modele_teste}")
         lignes.append(f"  1er jeton   {r.premier_jeton_ms:.0f} ms")
+        if r.chargement_ms is not None:
+            lignes.append(f"  chargement  {r.chargement_ms:.0f} ms")
         lignes.append(f"  total       {r.total_ms:.0f} ms")
         if r.jetons_par_s:
             lignes.append(f"  débit       {r.jetons_par_s:.1f} jetons/s")

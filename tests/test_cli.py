@@ -31,7 +31,7 @@ class FauxOllama(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header("Content-Type", "application/x-ndjson")
         self.end_headers()
-        for m in ({"response": "O"}, {"response": "K"}, {"done": True, "eval_count": 2, "eval_duration": 100_000_000}):
+        for m in ({"response": "O"}, {"response": "K"}, {"done": True, "eval_count": 2, "eval_duration": 100_000_000, "load_duration": 1_500_000_000}):
             self.wfile.write(json.dumps(m).encode() + b"\n")
 
 
@@ -55,6 +55,7 @@ def test_generation_mesuree(serveur):
     assert code == 0
     assert r.total_ms >= r.premier_jeton_ms > 0
     assert r.jetons_par_s == pytest.approx(20.0)
+    assert r.chargement_ms == pytest.approx(1500.0)
 
 
 def test_nom_sans_latest_accepte(serveur):
